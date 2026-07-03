@@ -69,3 +69,7 @@ A person must be registered by an admin **before** they can log in through
 the bot's Student/Parent/Tutor menu — the first message with their ID
 links their Telegram account to that record.
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> main
