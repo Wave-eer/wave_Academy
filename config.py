@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-BOT_TOKEN = os.environ.get("7825222032:AAHxRSHpLuYEqYibpErJt7Jsp1NPeS_Dsn4")
+BOT_TOKEN = os.environ.get("BOT_TOKEN")
 if not BOT_TOKEN:
     raise RuntimeError(
         "BOT_TOKEN is not set. Create a .env file (see .env.example) "
