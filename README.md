@@ -69,9 +69,4 @@ A person must be registered by an admin **before** they can log in through
 the bot's Student/Parent/Tutor menu — the first message with their ID
 links their Telegram account to that record.
 
-## Security notes
 
-- The bot token lives only in `.env`, which is git-ignored. Never hardcode
-  it in source.
-- If a token is ever committed or exposed publicly, regenerate it
-  immediately via BotFather (`/revoke` or `/token`).
