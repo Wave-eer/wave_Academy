@@ -7,21 +7,31 @@ submission, and academic progress monitoring, all through Telegram.
 
 ## Features
 
-- **Students** — view grades, see their next scheduled session, check status
-- **Parents** — view their child's grades and status, get their tutor's
-  name/subject, submit payment receipts (photo) for admin approval
-- **Tutors** — record grades, schedule the next study topic/date, list
-  their assigned students
-- **Admins** — register students/parents/tutors, review and approve/reject
-  payment receipts, all via bot commands
+- **Students** — view grades, see their next scheduled session, check
+  enrollment status and average, submit payment receipts
+- **Parents** — view each child's grades and performance breakdown, get
+  their tutor's name/subject/phone, submit payment receipts for approval
+- **Tutors** — record grades, schedule the next study topic and date
+  (students and parents are notified automatically), list their students.
+  A tutor cannot log in until an admin approves the account
+- **Admins** — register students/parents/tutors, approve tutors, assign
+  tutors to students, link parents to children, change enrollment status,
+  and approve/reject payment receipts with inline buttons
+
+Everything runs through inline keyboards inside a single
+`ConversationHandler`, so an unexpected message never strands a user
+mid-flow.
 
 ## Project structure
 
 ```
 wave_academy/
-├── bot.py              # Telegram handlers and conversation flow
-├── db.py                # SQLite schema and data access functions
-├── config.py             # Loads BOT_TOKEN / admin IDs from environment
+├── bot.py                  # Telegram handlers and conversation flow
+├── db.py                   # SQLite schema, migrations, data access
+├── config.py               # Loads BOT_TOKEN / admin IDs from environment
+├── seed.py                 # Sample data for local testing
+├── tests/
+│   └── test_wave_academy.py  # Offline test suite (no bot token needed)
 ├── requirements.txt
 ├── .env.example
 └── .gitignore
@@ -29,7 +39,7 @@ wave_academy/
 
 ## Setup
 
-1. Install dependencies:
+1. Install dependencies (Python 3.9+):
    ```bash
    pip install -r requirements.txt
    ```
@@ -43,33 +53,62 @@ wave_academy/
    cp .env.example .env
    ```
 
-4. Run the bot:
+4. Optionally load sample students, tutors, and parents:
+   ```bash
+   python seed.py            # safe to re-run
+   python seed.py --reset    # wipe the database first
+   ```
+
+5. Run the bot:
    ```bash
    python bot.py
    ```
 
 The database (`wave_academy.db`) and its tables are created automatically
-on first run.
+on first run, and existing databases are migrated in place.
+
+## Tests
+
+The suite runs entirely offline against a temporary database — no bot
+token or network access required:
+
+```bash
+python tests/test_wave_academy.py
+```
 
 ## Admin commands
 
-Only Telegram accounts listed in `ADMIN_TELEGRAM_IDS` can use these:
+Only Telegram accounts listed in `ADMIN_TELEGRAM_IDS` (or added later with
+`/add_admin`) can use these. Admins skip the login step — their Telegram
+ID is the credential.
 
-| Command | Usage |
+| Command | Purpose |
 |---|---|
-| Register a student | `/register_student <student_id> <name> [tutor_id]` |
-| Register a parent | `/register_parent <parent_id> <name> <child_student_id>` |
-| Register a tutor | `/register_tutor <tutor_id> <name> <subject>` |
-| Change student status | `/set_status <student_id> <status>` |
-| List pending payments | `/pending_payments` |
-| Approve a payment | `/approve_payment <payment_id>` |
-| Reject a payment | `/reject_payment <payment_id>` |
+| `/register_student <id> <name> [tutor_id]` | Create or rename a student |
+| `/register_parent <id> <name> [student_id]` | Create a parent, optionally linked to a child |
+| `/register_tutor <id> <name> [subject]` | Create a tutor (starts unapproved) |
+| `/approve_tutor <tutor_id>` | Let a tutor log in |
+| `/assign_tutor <tutor_id> <student_id> [subject]` | Assign a tutor to a student |
+| `/link_child <parent_id> <student_id>` | Link a parent to another child |
+| `/set_status <student_id> <status>` | `active`, `inactive`, `suspended`, or `graduated` |
+| `/add_admin <telegram_id> [name]` | Grant admin rights |
+| `/pending_payments` · `/all_payments` | List receipts |
+| `/approve_payment <id>` · `/reject_payment <id>` | Decide a receipt |
+| `/admin` | Show this list inside Telegram |
+| `/myid` | Show your numeric Telegram ID |
 
 A person must be registered by an admin **before** they can log in through
 the bot's Student/Parent/Tutor menu — the first message with their ID
-links their Telegram account to that record.
+links their Telegram account to that record. An ID already linked to
+someone else is refused, so accounts cannot be hijacked.
 
-<<<<<<< HEAD
-=======
+## Notes on data
 
->>>>>>> main
+- A parent may have several children; a student may have a different tutor
+  per subject. Both are stored in junction tables with real foreign keys.
+- Tutors can only record grades and sessions for students actually
+  assigned to them; the check is repeated at submit time, not just when
+  the menu is drawn.
+- A payment can only be decided once, so two admins cannot both approve
+  the same receipt.
+- `wave_academy.db` and `.env` are gitignored — never commit them.
